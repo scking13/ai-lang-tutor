@@ -1,6 +1,4 @@
-def greet():
-  """Prints a greeting message."""
-  print("Hello, World!")
+from app.server import app
 
 if __name__ == "__main__":
-  greet()
+  app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Learning App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Language Learning Chat</h1>
+    </header>
+
+    <div class="container">
+        <div class="settings-panel">
+            <h2>Settings</h2>
+            <div>
+                <label for="native-lang">Native Language:</label>
+                <select id="native-lang" name="native-lang">
+                    <option value="English" {% if settings.native_lang == 'English' %}selected{% endif %}>English</option>
+                    <option value="Spanish" {% if settings.native_lang == 'Spanish' %}selected{% endif %}>Spanish</option>
+                    <option value="French" {% if settings.native_lang == 'French' %}selected{% endif %}>French</option>
+                    <option value="German" {% if settings.native_lang == 'German' %}selected{% endif %}>German</option>
+                    <option value="Mandarin" {% if settings.native_lang == 'Mandarin' %}selected{% endif %}>Mandarin</option>
+                    {/* Add more languages as needed */}
+                </select>
+            </div>
+            <div>
+                <label for="target-lang">Target Language:</label>
+                <select id="target-lang" name="target-lang">
+                    <option value="English" {% if settings.target_lang == 'English' %}selected{% endif %}>English</option>
+                    <option value="Spanish" {% if settings.target_lang == 'Spanish' %}selected{% endif %}>Spanish</option>
+                    <option value="French" {% if settings.target_lang == 'French' %}selected{% endif %}>French</option>
+                    <option value="German" {% if settings.target_lang == 'German' %}selected{% endif %}>German</option>
+                    <option value="Mandarin" {% if settings.target_lang == 'Mandarin' %}selected{% endif %}>Mandarin</option>
+                    {/* Add more languages as needed */}
+                </select>
+            </div>
+            <div>
+                <label>Difficulty:</label>
+                <input type="radio" id="beginner" name="difficulty" value="Beginner" {% if settings.difficulty == 'Beginner' %}checked{% endif %}>
+                <label for="beginner">Beginner</label>
+                <input type="radio" id="intermediate" name="difficulty" value="Intermediate" {% if settings.difficulty == 'Intermediate' %}checked{% endif %}>
+                <label for="intermediate">Intermediate</label>
+                <input type="radio" id="advanced" name="difficulty" value="Advanced" {% if settings.difficulty == 'Advanced' %}checked{% endif %}>
+                <label for="advanced">Advanced</label>
+            </div>
+            <button id="update-settings-button">Update Settings</button> <!-- Added for explicit settings update -->
+        </div>
+
+        <div class="chat-area">
+            <h2>Chat</h2>
+            <div id="chat-messages" class="chat-messages">
+                {# Initial message if Gemini is not configured #}
+                {% if not gemini_configured %}
+                    <p class="message bot-message">Welcome! The Language Learning Model is not configured. Please set the GEMINI_API_KEY environment variable to enable chat features.</p>
+                {% endif %}
+                {# Messages will be loaded here by JavaScript #}
+            </div>
+            <div class="chat-input">
+                <input type="text" id="message-input" placeholder="Type your message..." {% if not gemini_configured %}disabled{% endif %}>
+                <button id="send-button" {% if not gemini_configured %}disabled{% endif %}>Send</button>
+            </div>
+        </div>
+
+        <div class="feedback-panel">
+            <h2>Comments/Feedback</h2>
+            <div id="feedback-content">
+                <p>Feedback on your messages will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Language Learning App</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+</body>
+</html>
