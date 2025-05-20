@@ -42,6 +42,10 @@ Follow these steps to set up and run the application locally:
     ```bash
     pip install -r requirements.txt
     ```
+    *Note: If you have previously installed dependencies, it's recommended to upgrade them to ensure all package versions are compatible after recent updates:*
+    ```bash
+    pip install -r requirements.txt --upgrade
+    ```
 
 4.  **Set Environment Variables**
     This application requires two environment variables to be set:
