@@ -72,8 +72,10 @@ Once you have completed the setup and installation steps:
 3.  **Navigate to the project's root directory** (if you aren't already there).
 4.  **Run the application using the following command:**
     ```bash
-    python app/main.py
+    python -m app.main
     ```
+    *Note: Using `python -m app.main` ensures that Python treats the `app` directory as a package, allowing relative imports within the application (like `from app.llm import ...`) to work correctly when running from the project root.*
+
 5.  The application will start, and you should see output similar to this in your terminal:
     ```
     * Serving Flask app 'app.server' (lazy loading)
