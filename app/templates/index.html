@@ -22,7 +22,7 @@
                     <option value="French" {% if settings.native_lang == 'French' %}selected{% endif %}>French</option>
                     <option value="German" {% if settings.native_lang == 'German' %}selected{% endif %}>German</option>
                     <option value="Mandarin" {% if settings.native_lang == 'Mandarin' %}selected{% endif %}>Mandarin</option>
-                    {/* Add more languages as needed */}
+                    {# Add more languages as needed #}
                 </select>
             </div>
             <div>
@@ -33,19 +33,21 @@
                     <option value="French" {% if settings.target_lang == 'French' %}selected{% endif %}>French</option>
                     <option value="German" {% if settings.target_lang == 'German' %}selected{% endif %}>German</option>
                     <option value="Mandarin" {% if settings.target_lang == 'Mandarin' %}selected{% endif %}>Mandarin</option>
-                    {/* Add more languages as needed */}
+                    {# Add more languages as needed #}
                 </select>
             </div>
             <div>
                 <label>Difficulty:</label>
-                <input type="radio" id="beginner" name="difficulty" value="Beginner" {% if settings.difficulty == 'Beginner' %}checked{% endif %}>
-                <label for="beginner">Beginner</label>
-                <input type="radio" id="intermediate" name="difficulty" value="Intermediate" {% if settings.difficulty == 'Intermediate' %}checked{% endif %}>
-                <label for="intermediate">Intermediate</label>
-                <input type="radio" id="advanced" name="difficulty" value="Advanced" {% if settings.difficulty == 'Advanced' %}checked{% endif %}>
-                <label for="advanced">Advanced</label>
+                <div class="difficulty-options"> {/* Added wrapper for styling */}
+                    <input type="radio" id="beginner" name="difficulty" value="Beginner" {% if settings.difficulty == 'Beginner' %}checked{% endif %}>
+                    <label for="beginner">Beginner</label>
+                    <input type="radio" id="intermediate" name="difficulty" value="Intermediate" {% if settings.difficulty == 'Intermediate' %}checked{% endif %}>
+                    <label for="intermediate">Intermediate</label>
+                    <input type="radio" id="advanced" name="difficulty" value="Advanced" {% if settings.difficulty == 'Advanced' %}checked{% endif %}>
+                    <label for="advanced">Advanced</label>
+                </div>
             </div>
-            <button id="update-settings-button">Update Settings</button> <!-- Added for explicit settings update -->
+            <button id="update-settings-button">Update Settings</button>
         </div>
 
         <div class="chat-area">
@@ -53,7 +55,7 @@
             <div id="chat-messages" class="chat-messages">
                 {# Initial message if Gemini is not configured #}
                 {% if not gemini_configured %}
-                    <p class="message bot-message">Welcome! The Language Learning Model is not configured. Please set the GEMINI_API_KEY environment variable to enable chat features.</p>
+                    <p class="message bot-message error-message">Welcome! The Language Learning Model is not configured. Please set the GEMINI_API_KEY environment variable to enable chat features.</p>
                 {% endif %}
                 {# Messages will be loaded here by JavaScript #}
             </div>

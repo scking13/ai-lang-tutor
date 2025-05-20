@@ -39,7 +39,7 @@ def generate_chat_response(user_input, conversation_history, native_lang, target
         return SERVICE_NOT_CONFIGURED_CHAT_MESSAGE
 
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash') # Updated model name
         
         system_prompt = f"""You are a language learning tutor.
         The user's native language is {native_lang}.
@@ -50,18 +50,9 @@ def generate_chat_response(user_input, conversation_history, native_lang, target
         """
 
         chat_history_for_model = []
-        # Prepend system instructions if no history or as a general behavior model
-        # For Gemini, it's often good to include system context in the chat history itself
-        # or as part of the first user message if the API doesn't have a dedicated system role.
-        # Let's try to add a system-like message at the beginning of the history if it's empty.
         
         if not conversation_history:
-            # This is a way to give initial instructions to the model.
-            # Note: The 'gemini-pro' model via `start_chat` expects alternating user/model roles.
-            # A true system prompt is better handled with `generate_content` if sending a single complex prompt,
-            # or by structuring the initial history carefully.
-            # For now, we will ensure the prompt for the current message includes the learning context.
-             pass # System prompt will be prepended to user_input if history is empty.
+             pass 
 
 
         for exchange in conversation_history:
@@ -72,7 +63,6 @@ def generate_chat_response(user_input, conversation_history, native_lang, target
         chat = model.start_chat(history=chat_history_for_model)
         
         contextual_user_input = user_input
-        # If this is the very first user message, prepend the system prompt.
         if not chat_history_for_model: 
              contextual_user_input = f"{system_prompt}\n\nUser: {user_input}\nAssistant (in {target_lang}):"
         
@@ -95,7 +85,7 @@ def generate_feedback(last_exchange, native_lang, target_lang, difficulty):
         return SERVICE_NOT_CONFIGURED_FEEDBACK_MESSAGE
 
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash') # Updated model name
         user_message = last_exchange.get('user')
         
         if not user_message:

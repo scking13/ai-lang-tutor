@@ -1,145 +1,361 @@
-body {
-    font-family: sans-serif;
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+body {
+    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background-color: #F0F2F5; /* Light gray background */
+    color: #202124; /* Dark gray text */
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: #f4f4f4;
 }
 
+/* Header */
 header {
-    background-color: #333;
-    color: white;
-    padding: 1em 0;
-    text-align: center;
+    background-color: #FFFFFF; /* White header */
+    padding: 12px 24px;
+    border-bottom: 1px solid #DADCE0; /* Subtle border */
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
+header h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+/* Main Container */
 .container {
     display: flex;
     flex-grow: 1;
-    padding: 20px;
-    gap: 20px; /* Adds space between flex items */
+    padding: 24px;
+    gap: 24px;
 }
 
+/* Panels General Styling */
+.settings-panel,
+.chat-area,
+.feedback-panel {
+    background-color: #FFFFFF; /* White panel background */
+    border-radius: 8px;
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-panel h2,
+.chat-area h2,
+.feedback-panel h2 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #3c4043;
+    padding: 16px 20px;
+    border-bottom: 1px solid #DADCE0;
+    margin-bottom: 16px;
+}
+
+/* Settings Panel (Left) */
 .settings-panel {
-    width: 20%;
-    padding: 15px;
-    border-right: 1px solid #ddd;
-    background-color: #fff;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    width: 22%;
+    min-width: 280px; /* Ensure it's usable */
+    padding-bottom: 16px; /* Padding for content inside */
 }
 
-.settings-panel h2 {
-    margin-top: 0;
-}
-
-.settings-panel div {
-    margin-bottom: 15px;
+.settings-panel > div { /* Direct children divs in settings panel */
+    padding: 0 20px;
+    margin-bottom: 20px;
 }
 
 .settings-panel label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 13px;
+    color: #3c4043;
 }
 
 .settings-panel select,
-.settings-panel input[type="radio"] + label {
-    margin-right: 10px;
+.settings-panel input[type="text"] /* If any text inputs were here */ {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #DADCE0;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #FFFFFF;
 }
 
+.settings-panel select:focus,
+.settings-panel input[type="text"]:focus {
+    outline: none;
+    border-color: #1A73E8; /* Accent blue */
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+}
+
+.settings-panel .difficulty-options label {
+    font-weight: normal;
+    display: inline-flex; /* Align radio and label */
+    align-items: center;
+    margin-right: 15px;
+    font-size: 14px;
+}
+.settings-panel .difficulty-options input[type="radio"] {
+    margin-right: 6px;
+    accent-color: #1A73E8; /* Make radio button blue */
+}
+
+
+/* Chat Area (Center) */
 .chat-area {
-    width: 55%; /* Adjusted width */
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-.chat-area h2 {
-    margin-top: 0;
-    padding: 15px;
-    border-bottom: 1px solid #ddd;
+    flex-grow: 1; /* Takes up remaining space */
+    min-width: 300px; /* Minimum width before squishing too much */
 }
 
 .chat-messages {
     flex-grow: 1;
-    padding: 15px;
+    padding: 20px;
     overflow-y: auto;
-    border-bottom: 1px solid #ddd;
-    min-height: 200px; /* Ensure it has some height */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .message {
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    line-height: 1.4;
+    padding: 10px 15px;
+    border-radius: 18px; /* More rounded corners */
+    max-width: 75%;
+    line-height: 1.5;
+    word-wrap: break-word;
 }
 
 .user-message {
-    background-color: #e1f5fe;
+    background-color: #D2E3FC; /* Light blue for user */
+    color: #202124;
     align-self: flex-end;
-    text-align: right;
-    margin-left: auto; /* Pushes user messages to the right */
+    border-bottom-right-radius: 4px; /* Gemini-like bubble shape */
 }
 
 .bot-message {
-    background-color: #f0f0f0;
+    background-color: #F1F3F4; /* Lighter gray for bot */
+    color: #202124;
     align-self: flex-start;
-    text-align: left;
-    margin-right: auto; /* Pushes bot messages to the left */
+    border-bottom-left-radius: 4px; /* Gemini-like bubble shape */
 }
+
+.message .timestamp { /* Placeholder for future timestamp styling */
+    display: block;
+    font-size: 11px;
+    color: #5F6368; /* Medium gray */
+    margin-top: 4px;
+    text-align: right; /* Or left based on message alignment */
+}
+
+.user-message .timestamp {
+    text-align: right;
+}
+.bot-message .timestamp {
+    text-align: left;
+}
+
+
+.loading-message {
+    color: #5F6368;
+    font-style: italic;
+}
+
+.error-message { /* For styling error messages from bot/feedback */
+    background-color: #FEEFC3; /* Light yellow for warning/error */
+    color: #BF360C; /* Dark orange/red text */
+    border: 1px solid #FDD663;
+}
+
 
 .chat-input {
     display: flex;
-    padding: 15px;
-    border-top: 1px solid #ddd; /* Add a border to separate from messages */
+    padding: 16px 20px;
+    border-top: 1px solid #DADCE0;
+    background-color: #FFFFFF; /* Ensure it's white like panel */
+    border-bottom-left-radius: 8px; /* Match panel radius */
+    border-bottom-right-radius: 8px;
 }
 
 .chat-input input[type="text"] {
     flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    padding: 12px 16px;
+    border: 1px solid #DADCE0;
+    border-radius: 24px; /* Pill shape */
+    font-size: 14px;
+    margin-right: 12px;
+    background-color: #F0F2F5; /* Slightly different background for input */
+}
+.chat-input input[type="text"]:focus {
+    outline: none;
+    border-color: #1A73E8;
+    background-color: #FFFFFF;
 }
 
 .chat-input button {
-    padding: 10px 15px;
-    background-color: #5cb85c;
+    padding: 0 16px; /* Adjust padding for icon-like button if desired */
+    background-color: #1A73E8; /* Accent blue */
     color: white;
     border: none;
-    border-radius: 3px;
-    margin-left: 10px;
+    border-radius: 24px; /* Pill shape */
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chat-input button:hover {
-    background-color: #4cae4c;
+    background-color: #185ABC; /* Darker blue on hover */
+}
+.chat-input button:disabled {
+    background-color: #B0C4DE; /* Lighter blue when disabled */
+    cursor: not-allowed;
 }
 
+
+/* Feedback Panel (Right) */
 .feedback-panel {
-    width: 25%; /* Adjusted width */
-    padding: 15px;
-    background-color: #fff;
-    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-}
-
-.feedback-panel h2 {
-    margin-top: 0;
+    width: 28%;
+    min-width: 300px; /* Ensure usability */
 }
 
 #feedback-content {
-    min-height: 100px; /* Ensure it has some height */
-    border: 1px solid #eee;
-    padding: 10px;
-    background-color: #fafafa;
+    padding: 0 20px 20px 20px; /* Add padding to content area */
+    overflow-y: auto;
+    flex-grow: 1;
+    font-size: 13px;
+    color: #3c4043;
+}
+#feedback-content p {
+    white-space: pre-wrap; /* Respect newlines from feedback */
+}
+#feedback-content .error-message { /* Error styling for feedback panel */
+    color: #BF360C;
+    font-style: italic;
 }
 
+
+/* Footer */
 footer {
-    background-color: #333;
-    color: white;
+    background-color: #FFFFFF;
+    color: #5F6368;
     text-align: center;
-    padding: 1em 0;
-    width: 100%;
+    padding: 12px 0;
+    border-top: 1px solid #DADCE0;
+    font-size: 12px;
+}
+
+/* Buttons (General, e.g., Update Settings) */
+button {
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+#update-settings-button {
+    background-color: #1A73E8;
+    color: white;
+    margin: 0 20px; /* Consistent with panel padding */
+}
+#update-settings-button:hover {
+    background-color: #185ABC;
+}
+#update-settings-button:disabled {
+    background-color: #B0C4DE;
+    cursor: not-allowed;
+}
+
+
+/* Scrollbar Styling (WebKit browsers) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F0F2F5; /* Light gray track */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CDCDCD; /* Medium gray thumb */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #AFAFAF; /* Darker gray thumb on hover */
+}
+
+
+/* Basic Responsiveness */
+@media (max-width: 900px) {
+    .container {
+        flex-direction: column;
+    }
+    .settings-panel,
+    .chat-area,
+    .feedback-panel {
+        width: 100%;
+        min-width: auto;
+        margin-bottom: 20px; /* Add space when stacked */
+    }
+    .settings-panel {
+        order: 1; /* Optional: reorder for mobile */
+    }
+    .chat-area {
+        order: 2;
+    }
+    .feedback-panel {
+        order: 3;
+    }
+    .message {
+        max-width: 90%; /* Allow messages to take more width on smaller screens */
+    }
+}
+
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 16px;
+    }
+    .settings-panel h2,
+    .chat-area h2,
+    .feedback-panel h2 {
+        font-size: 15px;
+        padding: 12px 15px;
+    }
+    .settings-panel > div,
+    #feedback-content {
+        padding: 0 15px 15px 15px;
+    }
+     .chat-messages {
+        padding: 15px;
+    }
+    .chat-input {
+        padding: 12px 15px;
+    }
+    .chat-input input[type="text"] {
+        padding: 10px 14px;
+        margin-right: 8px;
+    }
+    .chat-input button {
+        padding: 0 12px;
+    }
+    body {
+        font-size: 13px;
+    }
 }
