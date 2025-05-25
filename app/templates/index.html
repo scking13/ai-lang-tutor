@@ -37,15 +37,21 @@
                 </select>
             </div>
             <div>
-                <label>Difficulty:</label>
-                <div class="difficulty-options"> {/* Added wrapper for styling */}
-                    <input type="radio" id="beginner" name="difficulty" value="Beginner" {% if settings.difficulty == 'Beginner' %}checked{% endif %}>
-                    <label for="beginner">Beginner</label>
-                    <input type="radio" id="intermediate" name="difficulty" value="Intermediate" {% if settings.difficulty == 'Intermediate' %}checked{% endif %}>
-                    <label for="intermediate">Intermediate</label>
-                    <input type="radio" id="advanced" name="difficulty" value="Advanced" {% if settings.difficulty == 'Advanced' %}checked{% endif %}>
-                    <label for="advanced">Advanced</label>
-                </div>
+                <label for="difficulty">Difficulty:</label> {# Changed label to point to select ID #}
+                <select id="difficulty" name="difficulty">
+                    <option value="Beginner" {% if settings.difficulty == 'Beginner' %}selected{% endif %}>Beginner</option>
+                    <option value="Intermediate" {% if settings.difficulty == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                    <option value="Advanced" {% if settings.difficulty == 'Advanced' %}selected{% endif %}>Advanced</option>
+                </select>
+            </div>
+            <div>
+                <label for="tone">Tone:</label>
+                <select id="tone" name="tone">
+                    <option value="Serious" {% if settings.tone == 'Serious' %}selected{% endif %}>Serious</option>
+                    <option value="Romantic" {% if settings.tone == 'Romantic' %}selected{% endif %}>Romantic</option>
+                    <option value="Sarcastic" {% if settings.tone == 'Sarcastic' %}selected{% endif %}>Sarcastic</option>
+                    <option value="Neutral" {% if settings.tone == 'Neutral' %}selected{% endif %}>Neutral</option>
+                </select>
             </div>
             <button id="update-settings-button">Update Settings</button>
         </div>
