@@ -46,7 +46,6 @@ def get_full_chat_log_for_display():
     """Retrieves and formats the full chat log (chats and feedback) for display."""
     return _get_session_list('conversation_log')
 
-def update_session_settings(native_lang, target_lang, difficulty):
 def update_session_settings(native_lang, target_lang, difficulty, tone=None):
     settings = get_session_settings() # Ensures defaults are loaded, including 'tone'
     
