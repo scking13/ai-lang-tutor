@@ -5,9 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedbackContentDiv = document.getElementById('feedback-content');
     const nativeLangSelect = document.getElementById('native-lang');
     const targetLangSelect = document.getElementById('target-lang');
+    const difficultySelect = document.getElementById('difficulty'); // Added for dropdown
+    const toneSelect = document.getElementById('tone'); // Added for tone dropdown
     const updateSettingsButton = document.getElementById('update-settings-button');
 
-    const getDifficulty = () => document.querySelector('input[name="difficulty"]:checked').value;
+    const getDifficulty = () => difficultySelect.value; // Updated to read from select
+    const getTone = () => toneSelect.value; // Added to read from tone select
 
     const BOT_ERROR_PLACEHOLDER = "Sorry, I can't respond right now. The AI service seems to be unavailable. Please try again later.";
     const FEEDBACK_ERROR_PLACEHOLDER = "No feedback available at the moment. The AI service might be temporarily down.";
@@ -98,9 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.settings) {
                 nativeLangSelect.value = data.settings.native_lang || 'English';
                 targetLangSelect.value = data.settings.target_lang || 'Spanish';
-                document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
-                    radio.checked = radio.value === (data.settings.difficulty || 'Beginner');
-                });
+                difficultySelect.value = data.settings.difficulty || 'Beginner'; // Updated for dropdown
+                toneSelect.value = data.settings.tone || 'Serious'; // Added for tone
             }
 
         } catch (error) {
@@ -119,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nativeLang = nativeLangSelect.value;
         const targetLang = targetLangSelect.value;
         const difficulty = getDifficulty();
+        const currentTone = getTone(); // Get current tone
 
         displayMessage('user', messageText);
         messageInput.value = ''; 
@@ -136,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     native_lang: nativeLang,
                     target_lang: targetLang,
                     difficulty: difficulty,
+                    tone: currentTone, // Added tone to payload
                 }),
             });
 
@@ -191,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nativeLang = nativeLangSelect.value;
         const targetLang = targetLangSelect.value;
         const difficulty = getDifficulty();
+        const currentTone = getTone(); // Get current tone
 
         // You could add visual feedback for settings update too
         updateSettingsButton.textContent = 'Updating...';
@@ -204,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     native_lang: nativeLang,
                     target_lang: targetLang,
                     difficulty: difficulty,
+                    tone: currentTone, // Added tone to payload
                 }),
             });
             if (!response.ok) {

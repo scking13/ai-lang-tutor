@@ -47,24 +47,35 @@ def get_full_chat_log_for_display():
     return _get_session_list('conversation_log')
 
 def update_session_settings(native_lang, target_lang, difficulty):
-    settings = _get_session_dict('settings', {
-        'native_lang': 'English',
-        'target_lang': 'Spanish',
-        'difficulty': 'Beginner'
-    })
+def update_session_settings(native_lang, target_lang, difficulty, tone=None):
+    settings = get_session_settings() # Ensures defaults are loaded, including 'tone'
+    
     settings['native_lang'] = native_lang
     settings['target_lang'] = target_lang
     settings['difficulty'] = difficulty
+    if tone is not None:
+        settings['tone'] = tone
+    # If tone is None, it retains the value from get_session_settings()
+    
     session['settings'] = settings
     session.modified = True
     return settings
 
 def get_session_settings():
-    return _get_session_dict('settings', {
+    # This ensures that 'tone' is always present in session settings.
+    default_settings = {
         'native_lang': 'English',
         'target_lang': 'Spanish',
-        'difficulty': 'Beginner'
-    })
+        'difficulty': 'Beginner',
+        'tone': 'Serious' 
+    }
+    settings = _get_session_dict('settings', default_settings)
+    # Ensure all keys are present, even if session had an older version of settings
+    for key, value in default_settings.items():
+        if key not in settings:
+            settings[key] = value
+    session['settings'] = settings # Save back to session if updated
+    return settings
 
 # --- Routes ---
 
@@ -82,11 +93,18 @@ def send_message_route():
     native_lang = data.get('native_lang')
     target_lang = data.get('target_lang')
     difficulty = data.get('difficulty')
+    tone = data.get('tone') # Get tone from request
 
-    if not all([user_input, native_lang, target_lang, difficulty]):
-        return jsonify({'error': 'Missing message or language/difficulty settings'}), 400
+    current_settings = get_session_settings()
+    if native_lang is None: native_lang = current_settings['native_lang']
+    if target_lang is None: target_lang = current_settings['target_lang']
+    if difficulty is None: difficulty = current_settings['difficulty']
+    if tone is None: tone = current_settings['tone'] # Use session tone if not in request
 
-    update_session_settings(native_lang, target_lang, difficulty)
+    if not user_input: # Only user_input is strictly required from request body
+        return jsonify({'error': 'Missing message'}), 400
+
+    update_session_settings(native_lang, target_lang, difficulty, tone)
     
     # Retrieve current conversation history for the LLM
     # We pass the 'conversation_log' which contains both chat and feedback for context if needed,
@@ -95,11 +113,11 @@ def send_message_route():
     chat_only_history = [item for item in get_full_chat_log_for_display() if item['type'] == 'chat']
 
 
-    bot_response_text = generate_chat_response(user_input, chat_only_history, native_lang, target_lang, difficulty)
+    bot_response_text = generate_chat_response(user_input, chat_only_history, native_lang, target_lang, difficulty, tone)
     add_message_to_history(user_input, bot_response_text)
 
     last_exchange = {'user': user_input, 'bot': bot_response_text}
-    feedback_text = generate_feedback(last_exchange, native_lang, target_lang, difficulty)
+    feedback_text = generate_feedback(last_exchange, native_lang, target_lang, difficulty, tone)
     if feedback_text: 
         add_feedback_to_history(feedback_text, user_input)
         
@@ -121,11 +139,15 @@ def update_settings_route():
     native_lang = data.get('native_lang')
     target_lang = data.get('target_lang')
     difficulty = data.get('difficulty')
+    tone = data.get('tone') # Get tone from request
     
-    if not all([native_lang, target_lang, difficulty]):
-        return jsonify({'error': 'Missing language/difficulty settings'}), 400
+    current_settings = get_session_settings()
+    if native_lang is None: native_lang = current_settings['native_lang']
+    if target_lang is None: target_lang = current_settings['target_lang']
+    if difficulty is None: difficulty = current_settings['difficulty']
+    if tone is None: tone = current_settings['tone'] # Use session tone if not in request
         
-    updated_settings = update_session_settings(native_lang, target_lang, difficulty)
+    updated_settings = update_session_settings(native_lang, target_lang, difficulty, tone)
     return jsonify({'message': 'Settings updated successfully', 'settings': updated_settings})
 
 
