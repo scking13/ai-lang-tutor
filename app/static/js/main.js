@@ -9,16 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const toneSelect = document.getElementById('tone'); // Added for tone dropdown
     const updateSettingsButton = document.getElementById('update-settings-button');
 
-    // Speech recognition elements and state
-    const speechToggleButton = document.getElementById('speech-toggle-button');
-    const liveTranscriptionDiv = document.getElementById('live-transcription');
-    const botAudioOutput = document.getElementById('bot-audio-output');
-    let mediaRecorder;
-    let audioChunks = [];
-    let speechWebSocket;
-    let isRecording = false;
-    const SPEECH_WEBSOCKET_URL = `ws://${window.location.hostname}:8000/`; // Use window.location.hostname
-
     const getDifficulty = () => difficultySelect.value; // Updated to read from select
     const getTone = () => toneSelect.value; // Added to read from tone select
 
@@ -237,8 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSettingsButton.disabled = false;
         }
     });
-
-    loadHistory();
 
     // --- Speech Recognition and WebSocket VUI Functions ---
     // This section handles client-side logic for:
@@ -521,4 +509,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    loadHistory();
 });
