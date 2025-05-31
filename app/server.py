@@ -7,6 +7,7 @@ from app.llm import configure_gemini, generate_chat_response, generate_feedback,
 import asyncio
 import json
 import base64 # Added for encoding audio data
+import traceback # For logging WebSocket server crashes
 
 # --- WebSocket Speech Service Class ---
 class SpeechServiceSocket(WebSocket):
@@ -22,11 +23,15 @@ class SpeechServiceSocket(WebSocket):
     - Handling the lifecycle of the asyncio event loop for each connection.
     """
     def __init__(self, server, sock, address):
+        # Record initialization time and address for the connection.
+        self.connection_time = datetime.now()
+        print(f"{self.connection_time} [WS-{address}] SpeechServiceSocket.__init__: Initializing for new connection.")
         super().__init__(server, sock, address)
         self.loop = None
         self.audio_queue = None
         self.gemini_loop_thread = None
-        print(f"SpeechServiceSocket initialized for {self.address}")
+        # Note: self.address is available after super().__init__
+        print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.__init__: Super class initialized. Client address: {self.address}")
 
     def connected(self):
         """
@@ -37,7 +42,7 @@ class SpeechServiceSocket(WebSocket):
         - A separate thread (`self.gemini_loop_thread`) to run the event loop,
           which in turn runs `manage_gemini_live_connection`.
         """
-        print(f"{self.address} connected to SpeechServiceSocket.")
+        print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.connected: Client connected. Setting up audio queue and Gemini loop.")
         # Each client connection gets its own asyncio queue for audio data.
         self.audio_queue = asyncio.Queue()
         # Each client connection runs its Gemini interaction in a separate asyncio event loop.
@@ -52,6 +57,8 @@ class SpeechServiceSocket(WebSocket):
             WebSocket client (which is handled by the main WebSocket server thread) needs to be thread-safe.
             """
             client_message = None
+            # Log message receipt from Gemini manager
+            print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Received message from Gemini manager: {type(message_from_gemini)}")
             try:
                 # Case 1: Handle status or error messages directly from `manage_gemini_live_connection`.
                 # These are typically simple dictionaries like {'status': 'connected'} or {'error': '...'}
@@ -102,6 +109,7 @@ class SpeechServiceSocket(WebSocket):
 
                 # If model text was found, prepare and send it as a 'bot_response_text' message.
                 if model_text_response:
+                    print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Sending bot_response_text: {model_text_response[:100]}...")
                     text_client_msg = {'type': 'bot_response_text', 'data': model_text_response}
                     serialized_msg = json.dumps(text_client_msg)
                     # Use call_soon_threadsafe because this callback runs in the Gemini loop's thread,
@@ -111,6 +119,7 @@ class SpeechServiceSocket(WebSocket):
 
                 # If model audio was found (and Base64 encoded), prepare and send it.
                 if model_audio_response_b64:
+                    print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Sending bot_response_audio (b64 snippet): {model_audio_response_b64[:100]}...")
                     audio_client_msg = {'type': 'bot_response_audio', 'data': model_audio_response_b64}
                     serialized_msg = json.dumps(audio_client_msg)
                     self.loop.call_soon_threadsafe(self.send_message, serialized_msg)
@@ -120,15 +129,18 @@ class SpeechServiceSocket(WebSocket):
                 # it means the message from Gemini was not a recognized status/error, transcription,
                 # or model response. Log this for debugging.
                 if client_message is None and not model_text_response and not model_audio_response_b64:
-                    print(f"Unhandled/unknown message structure from Gemini for {self.address}: {type(message_from_gemini)}")
+                    print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Unhandled/unknown message structure from Gemini: {type(message_from_gemini)}")
                     # Optionally, send a generic 'unknown' message type to client for debugging there.
                     # client_message = {'type': 'unknown', 'data': str(message_from_gemini)}
+                elif client_message: # Log if there's a direct client_message to send (status, error, transcription)
+                     print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Parsed client_message to send: {client_message}")
+
 
             except AttributeError as ae: # Errors from trying to access non-existent attributes on SDK objects.
-                print(f"AttributeError processing message from Gemini for {self.address}: {ae}. Message: {message_from_gemini}")
+                print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: AttributeError processing message: {ae}. Message: {message_from_gemini}")
                 client_message = {'type': 'error', 'data': f"Internal server error processing API response: {ae}"}
             except Exception as e: # Catch-all for other unexpected errors during processing.
-                print(f"Error in output_callback_func processing message from Gemini for {self.address}: {e}")
+                print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Exception processing message: {e}")
                 client_message = {'type': 'error', 'data': f"Internal server error: {e}"}
 
             # If client_message was set (e.g. for status, error, or a single-part transcription), send it.
@@ -138,7 +150,7 @@ class SpeechServiceSocket(WebSocket):
                     serialized_msg = json.dumps(client_message)
                     self.loop.call_soon_threadsafe(self.send_message, serialized_msg)
                 except Exception as e: # Error during final serialization or send.
-                    print(f"Error serializing/sending client_message in output_callback_func for {self.address}: {e}")
+                    print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.output_callback_func: Error serializing/sending client_message: {e}")
                     fallback_error_msg = json.dumps({'type': 'error', 'message': 'Failed to send processed message to client.'})
                     self.loop.call_soon_threadsafe(self.send_message, fallback_error_msg)
 
@@ -161,10 +173,12 @@ class SpeechServiceSocket(WebSocket):
         gemini_coro = manage_gemini_live_connection(self.audio_queue, output_callback_func)
 
         # Start the event loop (and `gemini_coro`) in a new daemon thread.
-        self.gemini_loop_thread = Thread(target=loop_runner, args=(self.loop, gemini_coro))
+        self.gemini_loop_thread = Thread(target=loop_runner, args=(self.loop, gemini_coro), name=f"GeminiLoopThread-{self.address}")
         self.gemini_loop_thread.daemon = True # Allows main program to exit even if thread is running.
+        print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.connected: Starting Gemini Live connection thread {self.gemini_loop_thread.name} (ID: {self.gemini_loop_thread.ident}).")
         self.gemini_loop_thread.start()
-        print(f"Gemini Live connection thread started for {self.address}.")
+        # Note: thread ident is only available after start() is called, so previous log uses name.
+        # For more accurate ident logging here, would need to log after start or pass thread object itself to know its ident before start.
 
     def handle(self):
         """
@@ -173,6 +187,8 @@ class SpeechServiceSocket(WebSocket):
         It puts the received audio data into the `self.audio_queue` to be processed
         by `manage_gemini_live_connection` in the asyncio event loop.
         """
+        data_size = len(self.data) if self.data else 0
+        print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle: Received data from client (size: {data_size} bytes).")
         if self.audio_queue and self.loop and self.loop.is_running():
             try:
                 # `self.data` contains the binary audio data from the client.
@@ -180,12 +196,13 @@ class SpeechServiceSocket(WebSocket):
                 # into an asyncio queue that is consumed by a different thread's event loop.
                 # `call_soon_threadsafe` ensures this operation is scheduled correctly in the asyncio loop.
                 self.loop.call_soon_threadsafe(self.audio_queue.put_nowait, self.data)
+                print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle: Putting data onto audio_queue.")
             except Exception as e: # Broad exception catch for queue errors.
-                print(f"Error putting data into audio_queue for {self.address}: {e}")
+                print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle: Error putting data into audio_queue: {e}")
         else:
             # This might happen if data is received before the connection is fully set up
             # or after it has started to close.
-            print(f"Skipping data from {self.address}: audio_queue or event loop not ready.")
+            print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle: Skipping data, audio_queue or event loop not ready.")
 
     def handle_close(self):
         """
@@ -194,9 +211,9 @@ class SpeechServiceSocket(WebSocket):
         by putting a `None` sentinel into the `audio_queue`.
         It also handles cleanup of the asyncio loop and thread.
         """
-        print(f"{self.address} WebSocket connection closed.")
+        print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle_close: Connection closed by client.")
         if self.audio_queue and self.loop and self.loop.is_running():
-            print(f"Signaling Gemini Live connection to close for {self.address}.")
+            print(f"{datetime.now()} [WS-{self.address}] SpeechServiceSocket.handle_close: Signaling audio_queue with None.")
             # Send the `None` sentinel to the audio queue to stop the `send_audio_task`
             # in `manage_gemini_live_connection`. This is done thread-safely.
             self.loop.call_soon_threadsafe(self.audio_queue.put_nowait, None)
@@ -383,10 +400,28 @@ if __name__ == '__main__':
 
   # The `serve_forever()` method is blocking, so it needs to run in its own thread
   # to avoid blocking the main Flask application.
-  server_thread = Thread(target=speech_websocket_server.serve_forever)
-  server_thread.daemon = True # Set as daemon so it exits when the main Flask app exits.
+
+  def websocket_server_runner(server_instance):
+      """
+      Wrapper function to run the WebSocket server's serve_forever() method
+      and log any exceptions that cause it to crash.
+      """
+      try:
+          thread_ident = Thread.get_ident()
+          print(f"{datetime.now()} [WS-Runner-{thread_ident}] WebSocket server thread starting serve_forever()...")
+          server_instance.serve_forever()
+      except Exception as e:
+          thread_ident = Thread.get_ident()
+          print(f"{datetime.now()} [WS-Runner-{thread_ident}] !!! WebSocket server thread crashed: {e} !!!")
+          print(traceback.format_exc())
+      finally:
+          thread_ident = Thread.get_ident()
+          print(f"{datetime.now()} [WS-Runner-{thread_ident}] WebSocket server thread serve_forever() exited.")
+
+  server_thread = Thread(target=websocket_server_runner, args=(speech_websocket_server,))
+  server_thread.daemon = True
   server_thread.start()
-  print("Speech Service WebSocket server started on port 8000 in a separate thread.")
+  print(f"{datetime.now()} [MainThread] Speech Service WebSocket server started on port 8000 in a separate thread with error logging.")
 
   # Run the Flask web application.
   # `debug=False` and `use_reloader=False` are recommended for stability when managing
