@@ -66,6 +66,11 @@
                 {# Messages will be loaded here by JavaScript #}
             </div>
             <div class="chat-input">
+                <div class="speech-controls">
+                    <button id="speech-toggle-button">Start Speech</button>
+                    <audio id="bot-audio-output" style="display: none;"></audio>
+                </div>
+                <div id="live-transcription" class="live-transcription-feedback"></div>
                 <input type="text" id="message-input" placeholder="Type your message..." {% if not gemini_configured %}disabled{% endif %}>
                 <button id="send-button" {% if not gemini_configured %}disabled{% endif %}>Send</button>
             </div>
