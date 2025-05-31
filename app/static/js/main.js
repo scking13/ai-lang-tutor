@@ -254,8 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * Manages UI updates for the speech toggle button.
      */
     function handleSpeechToggle() {
+        console.log('[JS] handleSpeechToggle: Called. isRecording:', isRecording);
         if (!speechToggleButton) {
-            console.error("Speech toggle button not found.");
+            console.error("[JS] handleSpeechToggle: Speech toggle button not found."); // Added prefix
             return;
         }
         if (isRecording) {
@@ -273,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * 4. Defines handlers for WebSocket messages, errors, and closure.
      */
     async function startSpeechRecognition() {
+        console.log('[JS] startSpeechRecognition: Attempting to start.');
         if (!liveTranscriptionDiv || !speechToggleButton) return;
 
         // Clear previous messages and indicate connection attempt.
@@ -281,16 +283,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Request access to the user's microphone.
+            console.log('[JS] startSpeechRecognition: Requesting microphone access...');
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('[JS] startSpeechRecognition: Microphone access granted.');
             liveTranscriptionDiv.textContent = 'Microphone connected. Opening WebSocket...';
 
             // Initialize WebSocket connection to the speech service.
+            console.log('[JS] startSpeechRecognition: Initializing WebSocket to:', SPEECH_WEBSOCKET_URL);
             speechWebSocket = new WebSocket(SPEECH_WEBSOCKET_URL);
 
             // --- WebSocket Event Handlers ---
 
             // Called when the WebSocket connection is successfully opened.
             speechWebSocket.onopen = () => {
+                console.log('[JS] WebSocket.onopen: Connection established. MediaRecorder setup starting.');
                 liveTranscriptionDiv.textContent = 'Speech service connected. Recording...';
                 speechToggleButton.textContent = 'Stop Speech';
                 isRecording = true;
@@ -300,69 +306,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Event handler for when MediaRecorder has new audio data available.
                 mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0 && speechWebSocket && speechWebSocket.readyState === WebSocket.OPEN) {
-                        // audioChunks.push(event.data); // Store chunk if needed for other purposes.
-                        speechWebSocket.send(event.data); // Send audio data to backend via WebSocket.
+                    try {
+                        console.log('[JS] MediaRecorder.ondataavailable: Audio data available (size:', event.data.size, 'bytes). Sending via WebSocket.');
+                        if (event.data.size > 0 && speechWebSocket && speechWebSocket.readyState === WebSocket.OPEN) {
+                            speechWebSocket.send(event.data); // Send audio data to backend via WebSocket.
+                        }
+                    } catch (error) {
+                        console.error('[JS] MediaRecorder.ondataavailable: Error sending data via WebSocket.', error);
                     }
                 };
 
                 // Event handler for when MediaRecorder stops.
                 mediaRecorder.onstop = () => {
-                    console.log("MediaRecorder stopped.");
+                    console.log('[JS] MediaRecorder.onstop: Recording stopped. Microphone stream tracks will be stopped.');
                     // Stop all tracks on the stream to release the microphone.
                     if (stream) {
                         stream.getTracks().forEach(track => track.stop());
-                        console.log("Microphone stream tracks stopped.");
+                        console.log("[JS] MediaRecorder.onstop: Microphone stream tracks stopped."); // Added prefix
                     }
                 };
 
                 audioChunks = []; // Clear any previously stored chunks.
                 // Start recording, sending data in timeslices (e.g., every 1 second).
                 mediaRecorder.start(1000);
+                console.log('[JS] WebSocket.onopen: MediaRecorder started.');
             };
 
             // Called when a message is received from the WebSocket server.
             speechWebSocket.onmessage = event => {
+                console.log('[JS] WebSocket.onmessage: Raw data received:', event.data);
                 try {
                     const message = JSON.parse(event.data); // Expecting JSON messages.
-                    console.log("Received from WebSocket:", message);
+                    console.log('[JS] WebSocket.onmessage: Parsed message:', message);
 
                     // Handle different types of messages from the backend.
                     if (message.type === 'input_transcription') {
-                        // Display live transcription of user's speech.
+                        console.log('[JS] WebSocket.onmessage: Handling input_transcription:', message.data);
                         liveTranscriptionDiv.textContent = `You said: ${message.data}`;
                     } else if (message.type === 'bot_response_text') {
-                        // Display bot's text response in chat and speak it.
+                        console.log('[JS] WebSocket.onmessage: Handling bot_response_text:', message.data);
                         displayMessage('bot', message.data);
                         if (message.data && message.data.trim() !== "") {
                             const utterance = new SpeechSynthesisUtterance(message.data);
                             window.speechSynthesis.speak(utterance);
                         }
                     } else if (message.type === 'bot_response_audio') {
-                        // Play bot's audio response.
+                        console.log('[JS] WebSocket.onmessage: Handling bot_response_audio. Base64 length:', message.data ? message.data.length : 'N/A');
                         const audioBase64 = message.data;
                         if (audioBase64) {
                             try {
                                 const audioBlob = base64ToBlob(audioBase64, 'audio/mpeg'); // Assuming MPEG audio.
                                 const audioUrl = URL.createObjectURL(audioBlob);
                                 botAudioOutput.src = audioUrl;
+                                console.log('[JS] WebSocket.onmessage: Playing bot audio response.');
                                 botAudioOutput.play()
-                                    .then(() => console.log("Playing bot audio response."))
+                                    .then(() => console.log("[JS] WebSocket.onmessage: Bot audio playback started.")) // Added prefix
                                     .catch(e => {
-                                        console.error("Error playing bot audio:", e);
+                                        console.error("[JS] WebSocket.onmessage: Error playing bot audio:", e); // Added prefix
                                         displayMessage('bot', '[Error playing audio response. Text response (if any) is above.]');
                                         liveTranscriptionDiv.textContent = 'Error playing bot audio.';
                                     });
                                 displayMessage('bot', '[Playing audio response...]');
                             } catch (error) {
-                                console.error('Error processing bot audio:', error);
+                                console.error('[JS] WebSocket.onmessage: Error processing/playing bot_response_audio:', error);
                                 displayMessage('bot', '[Error playing audio response. Text response (if any) is above.]');
                                 liveTranscriptionDiv.textContent = 'Error playing bot audio.';
                             }
                         }
                     } else if (message.type === 'status') {
-                        // Display status messages from the backend (e.g., "connected", "disconnected").
-                        console.log("Status from SpeechService:", message.data);
+                        console.log('[JS] WebSocket.onmessage: Handling status:', message.data);
                         if (message.data === 'disconnected' && isRecording) {
                            liveTranscriptionDiv.textContent = 'Speech service disconnected.';
                            stopSpeechRecognition();
@@ -372,14 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             liveTranscriptionDiv.textContent = `Status: ${message.data}`;
                         }
                     } else if (message.type === 'error') {
-                        // Display error messages from the backend.
-                        console.error("Error from SpeechService:", message.data);
+                        console.error('[JS] WebSocket.onmessage: Handling error:', message.data);
                         liveTranscriptionDiv.textContent = `Error: ${message.data}`;
                         if (isRecording) {
                             stopSpeechRecognition(); // Stop recording on error.
                         }
                     // Fallback for other text messages if server sends them without a specific type.
                     } else if (message.text && message.text.trim() !== "") {
+                        console.log('[JS] WebSocket.onmessage: Handling generic text message:', message.text);
                         displayMessage('bot', message.text);
                          if (message.text && message.text.trim() !== "") {
                             const utterance = new SpeechSynthesisUtterance(message.text);
@@ -387,45 +399,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } catch (e) { // Error parsing JSON or processing message.
-                    console.error('Error processing message from WebSocket:', e, "Raw data:", event.data);
+                    console.error('[JS] WebSocket.onmessage: Error parsing JSON or processing message:', e);
                     liveTranscriptionDiv.textContent = 'Error processing server message.';
                 }
             };
 
             // Called when a WebSocket error occurs.
             speechWebSocket.onerror = error => {
-                console.error('Speech WebSocket error:', error);
+                console.error('[JS] WebSocket.onerror: WebSocket error occurred:', error);
                 liveTranscriptionDiv.textContent = 'Speech service connection error. Please try again.';
-                // stopSpeechRecognition() is usually called by onclose, which typically follows onerror.
             };
 
             // Called when the WebSocket connection is closed.
             speechWebSocket.onclose = event => {
-                console.log('Speech WebSocket closed:', event);
+                console.warn('[JS] WebSocket.onclose: WebSocket connection closed. Event:', event);
                 let reason = 'Speech service disconnected.';
-                // Provide more detailed reason for closure if not a normal closure.
                 if (event.code !== 1000 && event.code !== 1005 && event.code !== 1001 ) {
                     reason += ` (Code: ${event.code}, Reason: ${event.reason || 'N/A'})`;
                 }
 
-                if (isRecording) { // If recording was active, show the reason.
+                if (isRecording) {
                     liveTranscriptionDiv.textContent = reason;
                 } else if (event.code !== 1000 && event.code !== 1005 && event.code !== 1001) {
-                    // If not recording but closure was unexpected, show reason.
                     liveTranscriptionDiv.textContent = `Connection closed unexpectedly. ${reason}`;
                 } else {
-                    // For normal closure when not actively recording.
                      liveTranscriptionDiv.textContent = "Speech service session ended.";
                 }
-                stopSpeechRecognition(); // Always ensure cleanup and UI reset.
+                stopSpeechRecognition();
             };
 
         } catch (error) { // Error during microphone access.
-            console.error('Error starting speech recognition:', error);
+            console.error('[JS] startSpeechRecognition: Microphone access error:', error);
             liveTranscriptionDiv.textContent = 'Microphone access denied. Please check your browser settings and allow microphone access for this site.';
             if (isRecording) {
                 stopSpeechRecognition();
-            } else { // Ensure UI is reset even if recording hadn't fully started.
+            } else {
                  speechToggleButton.textContent = 'Start Speech';
                  isRecording = false;
             }
@@ -439,17 +447,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * 3. Resets UI elements and state variables.
      */
     function stopSpeechRecognition() {
+        console.log('[JS] stopSpeechRecognition: Attempting to stop.');
         // Stop MediaRecorder if it's currently recording.
         if (mediaRecorder && mediaRecorder.state === 'recording') {
+            console.log('[JS] stopSpeechRecognition: Stopping MediaRecorder.');
             mediaRecorder.stop();
-            console.log("Stopping MediaRecorder.");
         }
         // Note: Microphone stream tracks are stopped in mediaRecorder.onstop().
 
         // Close WebSocket connection if it's open.
         if (speechWebSocket && speechWebSocket.readyState === WebSocket.OPEN) {
+            console.log('[JS] stopSpeechRecognition: Closing WebSocket.');
             speechWebSocket.close();
-            console.log("Closing WebSocket connection.");
         }
 
         // Reset global variables.
@@ -463,7 +472,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isRecording = false;
         }
         // Update transcription display to indicate recording has stopped.
-        // liveTranscriptionDiv.textContent = 'Speech recognition stopped.'; // This is set by onclose or here.
+        // liveTranscriptionDiv.textContent = 'Speech recognition stopped.'; // This is often set by onclose.
+        console.log('[JS] stopSpeechRecognition: Process completed.');
     }
 
     /**
@@ -474,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {Blob} A Blob object representing the decoded data.
      */
     function base64ToBlob(base64, type = 'application/octet-stream') {
+        console.log('[JS] base64ToBlob: Converting base64 string (length:', base64.length, ') to Blob of type:', type);
         const byteCharacters = atob(base64); // Decode Base64 string to binary string.
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -490,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         speechToggleButton.addEventListener('click', handleSpeechToggle);
     } else {
         // Log a warning if the button isn't found, as speech functionality will be broken.
-        console.warn("Speech toggle button not found on page load. Speech functionality will be unavailable.");
+        console.warn("[JS] Initial Setup: Speech toggle button not found on page load. Speech functionality will be unavailable.");
     }
 
     // Set initial state for UI elements related to speech.
@@ -506,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveTranscriptionDiv) {
                 liveTranscriptionDiv.textContent = 'Speech service unavailable (LLM not configured).';
             }
+            console.warn('[JS] Initial Setup: Speech toggle button disabled due to service not configured.');
         }
     }
 
